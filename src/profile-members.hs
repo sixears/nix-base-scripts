@@ -33,10 +33,6 @@ import Data.Maybe     ( fromMaybe )
 import GHC.Generics   ( Generic )
 import System.IO      ( hPutStrLn, stderr )
 
--- deepseq -----------------------------
-
-import Control.DeepSeq  ( NFData )
-
 -- fpath -------------------------------
 
 import qualified FPath.Parseable
@@ -48,7 +44,7 @@ import FPath.AsFilePath        ( filepath )
 import FPath.AsFilePath'       ( filepath' )
 import FPath.RelDir            ( reldir )
 import FPath.RelFile           ( relfile )
-import FPath.Error.FPathError  ( AsFPathError( _FPathError ) )
+import FPath.Error.FPathError  ( AsFPathError )
 
 -- log-plus ----------------------------
 
@@ -95,7 +91,7 @@ import Text.Parser.Combinators  ( count,optional,sepByNonEmpty,try,unexpected )
 -- stdmain -----------------------------
 
 import StdMain             ( stdMainNoDR )
-import StdMain.UsageError  ( AsUsageError( _UsageError ), UsageFPathIOError )
+import StdMain.UsageError  ( AsUsageError, UsageFPIOTPError )
 
 -- text --------------------------------
 
@@ -110,8 +106,7 @@ import qualified  Text.Printer  as  P
 
 import TextualPlus  ( TextualPlus( textual' ), parseText, tparse )
 import TextualPlus.Error.TextualParseError
-                              ( AsTextualParseError( _TextualParseError )
-                              , TextualParseError, tparseToME' )
+                    ( AsTextualParseError, TextualParseError, tparseToME' )
 
 -- unix --------------------------------
 
@@ -119,70 +114,6 @@ import System.Posix.User  ( UserEntry, getEffectiveUserName, getUserEntryForName
                           , homeDirectory )
 
 --------------------------------------------------------------------------------
-
-data UsageFPIOTPError = UFPIOTPE_USAGE_FPATH_IO_ERROR  UsageFPathIOError
-                      | UFPIOTPE_TPARSE_ERROR          TextualParseError
-  deriving (Eq,Generic,NFData)
-
-_UFPIOTPE_USAGE_FPATH_IO_ERROR ∷ Prism' UsageFPIOTPError UsageFPathIOError
-_UFPIOTPE_USAGE_FPATH_IO_ERROR = prism' (\ e → UFPIOTPE_USAGE_FPATH_IO_ERROR e)
-                        (\ case UFPIOTPE_USAGE_FPATH_IO_ERROR e → 𝕵 e; _ → 𝕹)
-
-_UFPIOTPE_TPARSE_ERROR ∷ Prism' UsageFPIOTPError TextualParseError
-_UFPIOTPE_TPARSE_ERROR = prism' (\ e → UFPIOTPE_TPARSE_ERROR e)
-                             (\ case UFPIOTPE_TPARSE_ERROR e → 𝕵 e; _ → 𝕹)
-
---------------------
-
-instance Exception UsageFPIOTPError
-
---------------------
-
-instance Show UsageFPIOTPError where
-  show (UFPIOTPE_TPARSE_ERROR e) = show e
-  show (UFPIOTPE_USAGE_FPATH_IO_ERROR    e) = show e
-
---------------------
-
-instance AsUsageError UsageFPIOTPError where
-  _UsageError = _UFPIOTPE_USAGE_FPATH_IO_ERROR ∘ _UsageError
-
---------------------
-
-instance AsTextualParseError UsageFPIOTPError where
-  _TextualParseError = _UFPIOTPE_TPARSE_ERROR
-
---------------------
-
-instance AsFPathError UsageFPIOTPError where
-  _FPathError = _UFPIOTPE_USAGE_FPATH_IO_ERROR ∘ _FPathError
-
---------------------
-
-instance AsIOError UsageFPIOTPError where
-  _IOError = _UFPIOTPE_USAGE_FPATH_IO_ERROR ∘ _IOError
-
---------------------
-
-instance Printable UsageFPIOTPError where
-  print (UFPIOTPE_TPARSE_ERROR   e) = print e
-  print (UFPIOTPE_USAGE_FPATH_IO_ERROR e) = print e
-
---------------------
-
-instance HasCallstack UsageFPIOTPError where
-  callstack =
-    let
-      getter (UFPIOTPE_TPARSE_ERROR   e) = e ⊣ callstack
-      getter (UFPIOTPE_USAGE_FPATH_IO_ERROR e) = e ⊣ callstack
-      setter (UFPIOTPE_TPARSE_ERROR   e) cs =
-        UFPIOTPE_TPARSE_ERROR (e & callstack ⊢ cs)
-      setter (UFPIOTPE_USAGE_FPATH_IO_ERROR e) cs =
-        UFPIOTPE_USAGE_FPATH_IO_ERROR (e & callstack ⊢ cs)
-    in
-      lens getter setter
-
-------------------------------------------------------------
 
 data ShowVersion = ShowVersion | NoShowVersion
 data ShowIndex   = ShowIndex   | NoShowIndex
@@ -295,39 +226,34 @@ instance TextualPlus StorePath where
 
 storePathTests ∷ TestTree
 storePathTests =
-  let
-    check ∷ 𝕋 → StorePath → TestTree
--- XXX factor out parsec testing; textual testing
-    check input exp = testCase (unpack input) $ 𝕽 exp @=? (tparseToME' ∘ parseText) input
-  in
-    testGroup "storePath"
-      [ let
-          hash          = Hash "0dbkb5963hjgg45yw07sk3dm43jci4bw"
-          dirname       =
-            [reldir|0dbkb5963hjgg45yw07sk3dm43jci4bw-atreus-1.0.2.0/|]
-          path ∷ AbsDir = [absdir|/nix/store/|] ⫻ dirname
-          path'         = pack $ path ⫥ filepath'
-        in
-          check path' (StorePath { _path' = path
-                                 , _hash  = hash
-                                 , _pkg'  = Pkg "atreus"
-                                 , _ver   = 𝕵 (Ver "1.0.2.0") })
-      , let
-          hash          = Hash "g9zcvd6f5aasrxwm48bdbks3scv46b6x"
-          dirname       =
-            [reldir|g9zcvd6f5aasrxwm48bdbks3scv46b6x-jq-1.6-bin/|]
-          path ∷ AbsDir = [absdir|/nix/store/|] ⫻ dirname
-          path'         = pack $ path ⫥ filepath'
-        in
-          check path' (StorePath { _path' = path
-                                 , _hash  = hash
-                                 , _pkg'  = Pkg "jq"
-                                 -- the use of -bin in the version is
-                                 -- unsatisfying; but I can't see how to
-                                 -- distinguish from e.g., bash-5.1-p16, where
-                                 -- p16 *is* part of the version
-                                 , _ver   = 𝕵 (Ver "1.6-bin") })
-      ]
+  testGroup "storePath"
+    [ let
+        hash          = Hash "0dbkb5963hjgg45yw07sk3dm43jci4bw"
+        dirname       =
+          [reldir|0dbkb5963hjgg45yw07sk3dm43jci4bw-atreus-1.0.2.0/|]
+        path ∷ AbsDir = [absdir|/nix/store/|] ⫻ dirname
+        path'         = pack $ path ⫥ filepath'
+      in
+        checkT path' (StorePath { _path' = path
+                                , _hash  = hash
+                                , _pkg'  = Pkg "atreus"
+                                , _ver   = 𝕵 (Ver "1.0.2.0") })
+    , let
+        hash          = Hash "g9zcvd6f5aasrxwm48bdbks3scv46b6x"
+        dirname       =
+          [reldir|g9zcvd6f5aasrxwm48bdbks3scv46b6x-jq-1.6-bin/|]
+        path ∷ AbsDir = [absdir|/nix/store/|] ⫻ dirname
+        path'         = pack $ path ⫥ filepath'
+      in
+        checkT path' (StorePath { _path' = path
+                                , _hash  = hash
+                                , _pkg'  = Pkg "jq"
+                                -- the use of -bin in the version is
+                                -- unsatisfying; but I can't see how to
+                                -- distinguish from e.g., bash-5.1-p16, where
+                                -- p16 *is* part of the version
+                                , _ver   = 𝕵 (Ver "1.6-bin") })
+    ]
 
 spPkgVerPath ∷ StorePath → (Pkg, 𝕄 Ver, AbsDir)
 spPkgVerPath sp = (_pkg' sp, _ver sp, _path' sp)
