@@ -74,7 +74,7 @@ import Options.Applicative.Types              ( Parser, ParserInfo )
 
 -- path --------------------------------
 
-import Path  ( Abs, Dir, Path, Rel, (</>)
+import Path  ( Abs, Dir, Path, (</>)
              , absdir, isProperPrefixOf, parseAbsDir, reldir, toFilePath )
 
 -- QuickCheck --------------------------

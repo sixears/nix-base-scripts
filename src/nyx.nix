@@ -19,7 +19,7 @@ PATH=${pkgs.git}/bin
 
 Cmd[jq]=${pkgs.jq}/bin/jq
 Cmd[perl]=${pkgs.perl}/bin/perl
-Cmd[profile-members]=${profile-members}/bin/profile-members
+Cmd[profile-members]=${profile-members}
 
 TOP="$HOME/rc/nixpkgs"
 CONFIG_TOP="$HOME/rc/nixpkgs/configs"
@@ -204,8 +204,10 @@ main() {
           local -A profile_members=() profile_versions flake_versions
           if [[ -d $profile_dir ]]; then
             local profile
+            # the use of ##*/ here is a fop to profile-members which currently
+            # doesn't accept an abspath (but maybe it should)
             capture profile \
-                    gocmdnodryrun 13 profile-members --versions "$profile_dir"
+                    gocmdnodryrun 13 profile-members --version "''${profile_dir##*/}"
             local index pkg vers
             if [[ -n $profile ]]; then
               # we need the [[ -n $profile ]]; because otherwise bash runs the
@@ -307,7 +309,7 @@ main() {
 
       query   )
         if $is_flake; then
-          cmds+=( "''${Cmd[profile-members]} --no-index --versions $profile_dir" )
+          cmds+=( "''${Cmd[profile-members]} --no-index --version $profile_dir" )
         else
           cmds+=( "$( printf '%q ' "''${cmd[@]}" ''${opts[@]} "''${args[@]}" --query )"  )
         fi
