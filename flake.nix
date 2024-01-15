@@ -5,7 +5,7 @@
     nixpkgs.url = github:NixOS/nixpkgs/354184a; # master 2023-12-13
     flake-utils.url = github:numtide/flake-utils/c0e246b9;
     hpkgs1          = {
-      url    = github:sixears/hpkgs1/r0.0.22.0;
+      url    = github:sixears/hpkgs1/r0.0.24.0;
 #      inputs = { nixpkgs.follows = "nixpkgs"; };
     };
     bashHeader      = {
@@ -46,6 +46,12 @@
                              { inherit pkgs bash-header; };
               in
                 pkgs.writers.writeBashBin "nix-clone-revision" src;
+
+            prompt     = let
+                           src = import ./src/prompt.nix
+                                        { inherit pkgs bash-header; };
+                         in
+                           pkgs.writers.writeBashBin "prompt" src;
 
             inherit hix;
 

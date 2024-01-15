@@ -5,19 +5,32 @@ PATH=/dev/null
 
 source ${bash-header}
 
-# Cmd[git]=${pkgs.git}/bin/git
+Cmd[tput]=${pkgs.ncurses}/bin/tput
 
 # ------------------------------------------------------------------------------
 
+declare -A tput_attr=( [underscore]=smul )
 
 # --------------------------------------
 
 main() {
   local val="$1"
 
-  echo -n "$(tput setaf 219)$val$(tput sgr0)"
+  local -a attr=( underscore )
 
-  printf "\033k#[fg=color219,bg=default]$val\033\\"
+  local -a tputs=()
+  local i attr tput
+  for i in "''${attr[@]}"; do
+    attr="''${tput_attr[$i]}"
+    capture tput gocmd 10 tput "$attr"
+    tputs+=( "$tput" )
+  done
+
+  echo -n "$(''${Cmd[tput]} setaf 219)''${tputs[@]}$val$(''${Cmd[tput]} sgr0)"
+
+  local tmuxen=( fg=color219 bg=default blink underscore )
+  local IFS=,
+  printf "\033k#[''${tmuxen[*]}]$val\033\\"
 }
 
 # ------------------------------------------------------------------------------

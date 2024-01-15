@@ -58,6 +58,10 @@ import Numeric.Natural      ( Natural )
 import System.IO            ( IO, hPutStrLn, putStrLn, stderr )
 import Text.Show            ( Show( show ) )
 
+-- base-unicode-symbols ----------------
+
+-- import Data.Function.Unicode ( (∘) )
+
 -- optparse-applicative ----------------
 
 import Options.Applicative.Builder            ( ArgumentFields, Mod
@@ -76,6 +80,10 @@ import Options.Applicative.Types              ( Parser, ParserInfo )
 
 import Path  ( Abs, Dir, Path, (</>)
              , absdir, isProperPrefixOf, parseAbsDir, reldir, toFilePath )
+
+-- process -----------------------------
+
+import System.Process.Internals   ( translate )
 
 -- QuickCheck --------------------------
 
@@ -225,7 +233,7 @@ cleanPath _                = return
 
 printPath :: Options -> EnvKey -> PathList -> IO ()
 printPath o k p = do p' <- cleanPath o p
-                     putStrLn $ k <> "=" <> intercalate ":" (toFilePath <$> p')
+                     putStrLn $ k <> "=" <> intercalate ":" (translate . toFilePath <$> p')
 
 bindirs :: Foldable φ => φ PathElem -> PathList
 bindirs = concatMap (\d -> [ d </> [reldir|bin|] ])
