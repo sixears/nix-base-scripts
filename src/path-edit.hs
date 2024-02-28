@@ -1,4 +1,3 @@
-{nixpkgs?import<nixpkgs>{}}: ''
 -- cannot do this
 -- #!/home/martyn/.nix-profile/bin/runghc -Wall
 -- because runghc pollutes the path
@@ -584,10 +583,3 @@ test :: IO ()
 test = defaultMain tests
 
 -- that's all, folks! ----------------------------------------------------------
-''
-
-# Local Variables:
-# mode: haskell
-# End:
-
-# ------------------------------------------------------------------------------
