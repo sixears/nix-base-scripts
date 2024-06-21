@@ -27,6 +27,7 @@
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE ViewPatterns           #-}
+{-# LANGUAGE UnicodeSyntax          #-}
 
 import Prelude ( )
 
@@ -37,7 +38,7 @@ import qualified  System.Environment
 import Control.Applicative  ( (<*>), (<**>), (<|>), pure, some )
 import Control.Monad        ( (>>), filterM, forM, forM_, return, when )
 import Data.Bifunctor       ( bimap, first, second )
-import Data.Bool            ( Bool, (||), not )
+import Data.Bool            ( Bool( False, True ), (||), not )
 import Data.Either          ( Either( Left, Right ) )
 import Data.Eq              ( Eq, (==), (/=) )
 import Data.Foldable        ( Foldable, all, concatMap, foldl, foldl1 )
@@ -48,18 +49,23 @@ import Data.List            ( drop, filter, intercalate, length, lookup, notElem
                             , zipWith3
                             )
 import Data.Maybe           ( Maybe( Just, Nothing ), fromMaybe, isJust )
-import Data.Monoid          ( (<>), mconcat )
+import Data.Monoid          ( (<>), mconcat, mempty )
 import Data.Ord             ( (>) )
 import Data.String          ( String )
 import Data.Tuple           ( fst, snd, uncurry )
 import GHC.Exts             ( IsList( Item, fromList, toList ) )
 import Numeric.Natural      ( Natural )
+import System.Exit          ( die, exitSuccess )
 import System.IO            ( IO, hPutStrLn, putStrLn, stderr )
 import Text.Show            ( Show( show ) )
 
 -- base-unicode-symbols ----------------
 
 -- import Data.Function.Unicode ( (∘) )
+
+-- directory ---------------------------
+
+import System.Directory  ( doesDirectoryExist )
 
 -- optparse-applicative ----------------
 
@@ -94,7 +100,8 @@ import Data.List.Split  ( splitOn )
 
 -- tasty -------------------------------
 
-import Test.Tasty  ( TestTree, defaultMain, testGroup )
+import Test.Tasty              ( TestTree, defaultIngredients, testGroup )
+import Test.Tasty.Ingredients  ( tryIngredients )
 
 -- tasty-hunit -------------------------
 
@@ -104,10 +111,6 @@ import Test.Tasty.HUnit  ( (@?=)
 -- tasty-quickcheck --------------------
 
 import Test.Tasty.QuickCheck  ( Arbitrary( arbitrary, shrink ), testProperty )
-
--- unix --------------------------------
-
-import System.Posix.Files  ( fileExist )
 
 --------------------------------------------------------------------------------
 
@@ -227,7 +230,8 @@ parseOpts = let cleanHelp = help "remove duplicate & non-existing dirs"
 ------------------------------------------------------------
 
 cleanPath :: Options -> PathList -> IO PathList
-cleanPath (clean -> Clean) = filterM (fileExist . toFilePath) . nub
+-- we use doesDirectoryExist here, files are no use in the PATH
+cleanPath (clean -> Clean) = filterM (doesDirectoryExist . toFilePath) . nub
 cleanPath _                = return
 
 printPath :: Options -> EnvKey -> PathList -> IO ()
@@ -580,6 +584,10 @@ tests :: TestTree
 tests = testGroup "path-edit" [ unitTests, propertyTests ]
 
 test :: IO ()
-test = defaultMain tests
+test = do
+  ok ← fromMaybe (return False) (tryIngredients defaultIngredients mempty tests)
+  case ok of
+    True  → exitSuccess
+    False → die "tests failed"
 
 -- that's all, folks! ----------------------------------------------------------

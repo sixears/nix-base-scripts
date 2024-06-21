@@ -1,7 +1,5 @@
 { pkgs, path-edit }: pkgs.writers.writeBashBin "paths" ''
 
-#!/usr/bin/env bash
-
 set -eu -o pipefail
 PATH=/dev/null
 
@@ -17,8 +15,8 @@ paths=( ~
 # PATH=/bin
 
 case $# in
-  0) $path_edit -C prepend "${paths[@]}" ;;
-  *) eval $( $path_edit -C prepend "${paths[@]}" )
+  0) $path_edit -C prepend "''${paths[@]}" ;;
+  *) eval $( $path_edit -C prepend "''${paths[@]}" )
      exec "$@" ;;
 esac
 
