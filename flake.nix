@@ -2,7 +2,7 @@
   description = "base-scripts setup for nix";
 
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/354184a; # master 2023-12-13
+    nixpkgs.url     = github:NixOS/nixpkgs/938aa157; # nixos-24.05 2024-06-20
     flake-utils.url = github:numtide/flake-utils/c0e246b9;
     hpkgs1          = {
       url    = github:sixears/hpkgs1/r0.0.24.0;
@@ -55,8 +55,12 @@
 
             inherit hix;
 
-            path-edit =
-              import ./src/path-edit { inherit pkgs; };
+            path-edit = (mkHBin "path-edit" ./src/path-edit.hs {
+              libs = p: with p; with hlib.hpkgs;
+                [ directory path QuickCheck split tasty tasty-hunit
+                  tasty-quickcheck ];
+            }).pkg;
+            paths     = import ./src/paths.nix { inherit pkgs path-edit; };
           });
         });
 }
