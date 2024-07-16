@@ -9,7 +9,7 @@
 #      inputs = { nixpkgs.follows = "nixpkgs"; };
     };
     bashHeader      = {
-      url    = github:sixears/bash-header/5206b087;
+      url    = github:sixears/bash-header/r0.0.3.0;
       inputs = { nixpkgs.follows = "nixpkgs"; };
     };
   };
