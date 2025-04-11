@@ -2,10 +2,15 @@
   description = "base-scripts setup for nix";
 
   inputs = {
-    nixpkgs.url     = github:NixOS/nixpkgs/938aa157; # nixos-24.05 2024-06-20
+    nixpkgs.url     = github:NixOS/nixpkgs/d9d87c51; # nixos-24.11 2024-12-11
     flake-utils.url = github:numtide/flake-utils/c0e246b9;
+    myPkgs          = {
+      url    = github:sixears/nix-pkgs/r0.0.13.0;
+#      url    = path:/home/martyn/nix/pkgs/;
+      inputs = { nixpkgs.follows = "nixpkgs"; };
+    };
     hpkgs1          = {
-      url    = github:sixears/hpkgs1/r0.0.24.0;
+      url    = github:sixears/hpkgs1/r0.0.41.0;
 #      inputs = { nixpkgs.follows = "nixpkgs"; };
     };
     bashHeader      = {
@@ -14,10 +19,11 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, hpkgs1, bashHeader }:
+  outputs = { self, nixpkgs, flake-utils, hpkgs1, bashHeader, myPkgs }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs        = nixpkgs.legacyPackages.${system};
+        my-pkgs     = myPkgs.packages.${system};
         hpkgs       = hpkgs1.packages.${system};
         hlib        = hpkgs1.lib.${system};
         mkHBin      = hlib.mkHBin;
@@ -27,6 +33,7 @@
       in
         {
           packages = flake-utils.lib.flattenTree (with pkgs; rec {
+
             # general utilities ------------------------------------------------
 
             replace       = import ./src/replace.nix  { inherit pkgs; };
@@ -54,15 +61,7 @@
                            pkgs.writers.writeBashBin "prompt" src;
 
             inherit hix;
-
-            path-edit = (mkHBin "path-edit" ./src/path-edit.hs {
-              libs = p: with p; with hlib.hpkgs;
-                [ directory path QuickCheck split tasty tasty-hunit
-                  tasty-quickcheck ];
-            }).pkg;
-            paths     = import ./src/paths.nix { inherit pkgs path-edit; };
+            inherit (my-pkgs) paths path-edit;
           });
         });
 }
-
-
