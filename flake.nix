@@ -5,7 +5,7 @@
     nixpkgs.url     = github:NixOS/nixpkgs/d9d87c51; # nixos-24.11 2024-12-11
     flake-utils.url = github:numtide/flake-utils/c0e246b9;
     myPkgs          = {
-      url    = github:sixears/nix-pkgs/r0.0.13.0;
+      url    = github:sixears/nix-pkgs/r0.0.14.0;
 #      url    = path:/home/martyn/nix/pkgs/;
       inputs = { nixpkgs.follows = "nixpkgs"; };
     };
@@ -62,6 +62,11 @@
 
             inherit hix;
             inherit (my-pkgs) paths path-edit;
+
+            termfake   = let
+                           src = pkgs.lib.strings.fileContents ./src/termfake.py;
+                         in
+                           pkgs.writers.writePython3Bin "termfake" {} src;
           });
         });
 }
