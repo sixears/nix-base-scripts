@@ -5,7 +5,6 @@ import termios
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--tty', type=argparse.FileType('w'),
-                    # default=os.ttyname(sys.stdout.fileno()),
                     default=sys.stdout,
                     help='device to use for the tty')
 
@@ -27,8 +26,6 @@ if args.stdin:
 else:
     data = ' '.join([args.cmd] + args.args)
 
-# tty = os.ttyname(args.tty.fileno())
-# print(tty)
 for c in data:
     fcntl.ioctl(args.tty, termios.TIOCSTI, c)
 if not args.n and data[-1][-1] != '\n':
@@ -36,9 +33,10 @@ if not args.n and data[-1][-1] != '\n':
 
 # -- that's all, folks! -------------------------------------------------------
 
-# I hate the 4-level indent, but python/nix rules require it :-(
+# I hate the 4-level indent & 78-fill, but python/nix rules require it :-(
 # Local Variables:
 # mode: python
 # python-indent-offset: 4
+# fill-column: 78
 # End:
 

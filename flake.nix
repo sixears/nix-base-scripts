@@ -2,19 +2,19 @@
   description = "base-scripts setup for nix";
 
   inputs = {
-    nixpkgs.url     = github:NixOS/nixpkgs/d9d87c51; # nixos-24.11 2024-12-11
+    nixpkgs.url     = github:NixOS/nixpkgs/667d5cf1; # nixos-26.05 2026-06-26
     flake-utils.url = github:numtide/flake-utils/c0e246b9;
     myPkgs          = {
-      url    = github:sixears/nix-pkgs/r0.0.14.0;
+      url    = github:sixears/nix-pkgs/r0.0.16.0;
 #      url    = path:/home/martyn/nix/pkgs/;
       inputs = { nixpkgs.follows = "nixpkgs"; };
     };
     hpkgs1          = {
-      url    = github:sixears/hpkgs1/r0.0.41.0;
+      url    = github:sixears/hpkgs1/r0.0.55.0;
 #      inputs = { nixpkgs.follows = "nixpkgs"; };
     };
     bashHeader      = {
-      url    = github:sixears/bash-header/r0.0.3.0;
+      url    = github:sixears/bash-header/r0.0.7.0;
       inputs = { nixpkgs.follows = "nixpkgs"; };
     };
   };
@@ -30,6 +30,9 @@
         bash-header = bashHeader.packages.${system}.bash-header;
 
         hix         = hpkgs.hix;
+
+        termfake   = let src = pkgs.lib.strings.fileContents ./src/termfake.py;
+                     in  pkgs.writers.writePython3Bin "termfake" {} src;
       in
         {
           packages = flake-utils.lib.flattenTree (with pkgs; rec {
@@ -43,30 +46,35 @@
             nix-dist-version-bump  =
               import ./src/nix-dist-version-bump.nix { inherit pkgs; };
 
-            nix-upgrade            =
+            nix-upgrade =
               import ./src/nix-upgrade.nix { inherit pkgs replace bash-header
                                                      nix-dist-version-bump; };
 
-            nix-clone-revision     =
+            nix-clone-revision =
               let
                 src = import ./src/nix-clone-revision.nix
                              { inherit pkgs bash-header; };
               in
                 pkgs.writers.writeBashBin "nix-clone-revision" src;
 
-            prompt     = let
-                           src = import ./src/prompt.nix
-                                        { inherit pkgs bash-header; };
-                         in
-                           pkgs.writers.writeBashBin "prompt" src;
+##            prompt = let
+##                       src = import ./src/prompt.nix
+##                                    { inherit pkgs bash-header; };
+##                     in
+##                       pkgs.writers.writeBashBin "prompt" src;
 
             inherit hix;
             inherit (my-pkgs) paths path-edit;
 
-            termfake   = let
-                           src = pkgs.lib.strings.fileContents ./src/termfake.py;
-                         in
-                           pkgs.writers.writePython3Bin "termfake" {} src;
+            flasher = let src = import ./src/flasher.nix
+                                       { inherit pkgs termfake; };
+                      in  pkgs.writers.writeBashBin "flasher" src;
+
+            echot   = let src = import ./src/echot.nix
+                                       { inherit pkgs bash-header; };
+                      in  pkgs.writers.writeBashBin "echot" src;
+
+            bash-preexec = import ./src/bash-preexec.nix { inherit pkgs; };
           });
         });
 }
