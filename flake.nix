@@ -10,11 +10,11 @@
       inputs = { nixpkgs.follows = "nixpkgs"; };
     };
     hpkgs1          = {
-      url    = github:sixears/hpkgs1/r0.0.55.0;
+      url    = github:sixears/hpkgs1/r0.0.58.0;
 #      inputs = { nixpkgs.follows = "nixpkgs"; };
     };
     bashHeader      = {
-      url    = github:sixears/bash-header/r0.0.7.0;
+      url    = github:sixears/bash-header/r0.0.8.0;
       inputs = { nixpkgs.follows = "nixpkgs"; };
     };
   };
